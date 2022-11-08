@@ -8,6 +8,19 @@ import socket
 ssid='UPC3915714'
 password=''
 
+def debug(i2c):
+    # Check if RPi pico is found and some properties
+    print('Scan i2c bus...')
+    devices = i2c.scan()
+    if len(devices) == 0:
+        print("No i2c device !")
+    else:
+        print("Device found")
+    devices = i2c.scan()
+    if devices:
+        for i in devices:
+            print("The device hex code is ", hex(i), " the address number is ", i)
+
 def connect():
     #Connect to WLAN
     wlan = network.WLAN(network.STA_IF)
@@ -44,24 +57,7 @@ def webpage(reading):
             """
     return str(html)
 
-sda=Pin(0) 
-scl=Pin(1) 
-i2c=I2C(0,sda=sda, scl=scl, freq=400000)
-
-# Check if RPi pico is found and some properties
-print('Scan i2c bus...')
-devices = i2c.scan()
-if len(devices) == 0:
-    print("No i2c device !")
-else:
-    print("Device found")
-devices = i2c.scan()
-if devices:
-    for i in devices:
-        print("The device hex code is ", hex(i), " the address number is ", i)
-
-
-def serve(connection):
+def serve(i2c, connection):
     #Start a web server
     while 1:
         bme=bme280.BME280(i2c=i2c, address=119)
@@ -76,17 +72,16 @@ def serve(connection):
         client.send(html)
         client.close()
 
-if 0:
-    #for starting webpage
+def start_webpage(i2c):
+     #for starting webpage
     try:
         ip = connect()
         connection = open_socket(ip)
-        serve(connection)
+        serve(i2c, connection)
     except KeyboardInterrupt:
         machine.reset()
 
-
-if 0:
+def LED_blinking():
     #simplest LED blinking test
     led = machine.Pin("LED", machine.Pin.OUT)
     while True:
@@ -94,14 +89,17 @@ if 0:
         time.sleep(1)
         led.off()
         time.sleep(1)
+        
 
+sda=Pin(0) 
+scl=Pin(1) 
+i2c=I2C(0,sda=sda, scl=scl, freq=400000)  
 
 #read out temperature, air pressure and humidity
-if 1:
-    bme = bme280.BME280(i2c=i2c, address=119)          #BME280 object created
-    print(bme.values)
+
 
 if 1:
+    bme = bme280.BME280(i2c=i2c, address=119)          #BME280 object created
     button = Pin(16, Pin.IN, Pin.PULL_UP)
     button_state=0
     circumference = 2*3.1415*0.09 #meter
@@ -121,7 +119,8 @@ if 1:
         if runs*time_sleep>=time_average:
             runs=0
             wind_speed=rotations*circumference/time_average #m/s
-            print("wind speed = %1.2f m/s which is %1.2f km/h"%(wind_speed, wind_speed*3.6))
+            print("Wind speed = %1.2f m/s which is %1.2f km/h"%(wind_speed, wind_speed*3.6))
+            print("Temperature=%s, Pressue=%s, Humidity=%s"%(bme.values[0], bme.values[1], bme.values[2]))
             rotations=0
 
   
