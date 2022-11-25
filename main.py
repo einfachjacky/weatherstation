@@ -89,39 +89,65 @@ def LED_blinking():
         time.sleep(1)
         led.off()
         time.sleep(1)
-        
 
-sda=Pin(0) 
-scl=Pin(1) 
-i2c=I2C(0,sda=sda, scl=scl, freq=400000)  
-
-#read out temperature, air pressure and humidity
-
-
+#rainfall rf sensors
+    
 if 1:
+    #temperature, humidity, pressure
+    sda=Pin(0) 
+    scl=Pin(1) 
+    i2c=I2C(0,sda=sda, scl=scl, freq=400000) 
     bme = bme280.BME280(i2c=i2c, address=119)          #BME280 object created
-    button = Pin(16, Pin.IN, Pin.PULL_UP)
-    button_state=0
-    circumference = 2*3.1415*0.09 #meter
-    rotations=0
-    time_average=1 #seconds
-    time_sleep=0.01
-    runs=0
+    
+    #windspeed (ws)
+    button_ws = Pin(16, Pin.IN, Pin.PULL_UP)
+    button_ws_state=0
+    circumference_ws = 2*3.1415*0.09 #meter
+    rotations_ws=0
+    time_average_ws=1 #seconds
+    time_sleep_ws=0.01
+    runs_ws=0
+    
+    #rainfall rf
+    button_rf = Pin(6, Pin.IN, Pin.PULL_UP)
+    button_rf_state=1
+    bucket_size_rf = 0.2794
+    count_rf = 0
+    time0_rf = time.time()
+    average_time_rf = 30 #rainfall in the last 900 seconds
+
+    
     while 1:
-        if button_state==0 and button.value():
-            button_state=1
-            rotations+=0.5
-        if button_state and button.value()==0:
-            button_state=0
-        
-        time.sleep(time_sleep)
-        runs+=1
-        if runs*time_sleep>=time_average:
-            runs=0
-            wind_speed=rotations*circumference/time_average #m/s
+        #windspeed ws
+        if button_ws_state==0 and button_ws.value():
+            button_ws_state=1
+            rotations_ws+=0.5
+        if button_ws_state and button_ws.value()==0:
+            button_ws_state=0
+        time.sleep(time_sleep_ws)
+        runs_ws+=1
+        if runs_ws*time_sleep_ws>=time_average_ws:
+            runs_ws=0
+            wind_speed=rotations_ws*circumference_ws/time_average_ws #m/s
             print("Wind speed = %1.2f m/s which is %1.2f km/h"%(wind_speed, wind_speed*3.6))
             print("Temperature=%s, Pressue=%s, Humidity=%s"%(bme.values[0], bme.values[1], bme.values[2]))
-            rotations=0
+            rotations_ws=0
+            
+        #rainfall rf
+
+        if button_rf_state==0 and button_rf.value():
+            button_rf_state=1
+            count_rf+=1
+        if button_rf_state and button_rf.value()==0:
+            button_rf_state=0
+        if time.time() >= time0_rf + average_time_rf:
+            rainfall = count_rf * bucket_size_rf
+            count_rf=0
+            time0_rf=time.time()
+            print("rainfall", average_time_rf)
+            
+            
+        
 
   
 
